@@ -6,9 +6,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.IntRange;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.lang.reflect.Constructor;
@@ -17,11 +19,19 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends RecyclerView.Adapter<VH> {
 
     protected abstract void convert(@NonNull VH holder, T item, int position);
+
+    /**
+     * 可选实现，如果你是用了[payloads]刷新item，请实现此方法，进行局部刷新
+     */
+    protected void update(@NonNull VH holder, T item, List<Object> payloads) {
+
+    }
 
     private Context context;
     //点击位置
@@ -70,10 +80,7 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
             view = mLayoutInflater.inflate(layoutResId, viewGroup, false);
         }
         //获取ViewHolder
-        VH baseViewHolder = createBaseViewHolder(view);
-
-        baseViewHolder.setAdapter(this);
-        return baseViewHolder;
+        return createBaseViewHolder(view);
     }
 
     @Override
@@ -83,8 +90,23 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
             item = data.get(position);
         }
         //设置item的点击事件/长按事件
-        bindViewClickListener(holder, item, position);
+        bindViewClickListener(holder, position);
         convert(holder, item, position);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position);
+            return;
+        }
+        T item = null;
+        if (position >= 0 && position < data.size()) {
+            item = data.get(position);
+        }
+        //设置item的点击事件/长按事件
+        bindViewClickListener(holder, position);
+        update(holder, item, payloads);
     }
 
     @Override
@@ -174,7 +196,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
     /**
      * item的点击事件/长按事件
      */
-    private void bindViewClickListener(final VH baseViewHolder, final T item, final int position) {
+    private void bindViewClickListener(final VH baseViewHolder, final int position) {
+        if (baseViewHolder == null) {
+            return;
+        }
         final View view = baseViewHolder.itemView;
         //事件
         if (onItemClickListener != null) {
@@ -189,10 +214,37 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
             view.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override
                 public boolean onLongClick(View v) {
-                    onItemLongClickListener.onItemLongClick(view, position);
-                    return false;
+                    return onItemLongClickListener.onItemLongClick(view, position);
                 }
             });
+        }
+        if (mOnItemChildClickListener != null) {
+            for (int id : childClickViewIds) {
+                View childView = view.findViewById(id);
+                if (!childView.isClickable()) {
+                    childView.setClickable(true);
+                }
+                childView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mOnItemChildClickListener.onItemChildClick(BaseQuickAdapter.this, v, position);
+                    }
+                });
+            }
+        }
+        if (onItemChildLongClickListener != null) {
+            for (int id : childLongClickViewIds) {
+                View childView = view.findViewById(id);
+                if (!childView.isLongClickable()) {
+                    childView.setLongClickable(true);
+                }
+                childView.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        return onItemChildLongClickListener.onItemChildLongClick(BaseQuickAdapter.this, v, position);
+                    }
+                });
+            }
         }
     }
 
@@ -215,11 +267,67 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
     private OnItemLongClickListener onItemLongClickListener;
 
     public interface OnItemLongClickListener {
-        void onItemLongClick(View view, int position);
+        boolean onItemLongClick(View view, int position);
     }
 
     public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
         this.onItemLongClickListener = onItemLongClickListener;
+    }
+
+    /**
+     * 用于保存需要设置点击事件的 item
+     */
+    private final LinkedHashSet<Integer> childClickViewIds = new LinkedHashSet<>();
+
+    public LinkedHashSet<Integer> getChildClickViewIds() {
+        return childClickViewIds;
+    }
+
+    /**
+     * 设置需要点击事件的子view
+     */
+    public void addChildClickViewIds(@IdRes int... viewIds) {
+        for (int viewId : viewIds) {
+            childClickViewIds.add(viewId);
+        }
+    }
+
+    private OnItemChildClickListener mOnItemChildClickListener;
+
+    public interface OnItemChildClickListener {
+        void onItemChildClick(@NonNull BaseQuickAdapter<?, ?> adapter, @NonNull View view, int position);
+    }
+
+    public void setOnItemChildClickListener(OnItemChildClickListener listener) {
+        mOnItemChildClickListener = listener;
+    }
+
+    /**
+     * 用于保存需要设置长按点击事件的 item
+     */
+    private final LinkedHashSet<Integer> childLongClickViewIds = new LinkedHashSet<>();
+
+    public LinkedHashSet<Integer> getChildLongClickViewIds() {
+        return childLongClickViewIds;
+    }
+
+    /**
+     * 设置需要长按点击事件的子view
+     */
+    public void addChildLongClickViewIds(@IdRes int... viewIds) {
+        for (int viewId : viewIds) {
+            childLongClickViewIds.add(viewId);
+        }
+    }
+
+    private OnItemChildLongClickListener onItemChildLongClickListener;
+
+    public interface OnItemChildLongClickListener {
+        boolean onItemChildLongClick(@NonNull BaseQuickAdapter<?, ?> adapter, @NonNull View view, int position);
+    }
+
+    public void setOnItemChildLongClickListener(OnItemChildLongClickListener listener) {
+        onItemChildLongClickListener = listener;
     }
 
     public Context getContext() {
@@ -256,6 +364,24 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
      */
     public void setDefaultPosition(int position) {
         clickLocation = position;
+    }
+
+    /**
+     * 获取指定位置数据
+     */
+    public T getItem(@IntRange(from = 0) int position) {
+        return data.get(position);
+    }
+
+    /**
+     * 获取指定元素的位置
+     * 如果返回 -1，表示不存在
+     */
+    public int getItemPosition(T item) {
+        if (item != null && !data.isEmpty()) {
+            return data.indexOf(item);
+        }
+        return -1;
     }
 
     /**
@@ -331,6 +457,17 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
     }
 
     /**
+     * 删除一个指定位置的元素，如果position越界则无效
+     */
+    public void removeItem(T element) {
+        int index = data.indexOf(element);
+        if (index == -1) {
+            return;
+        }
+        removeItem(index);
+    }
+
+    /**
      * 修改某个item的数据，如果position越界则无效
      *
      * @param position item位置
@@ -367,5 +504,11 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         if (dataSize == size) {
             notifyDataSetChanged();
         }
+    }
+
+    public void setDiffData(DiffUtil.DiffResult result, List<T> newList) {
+        data.clear();
+        data.addAll(newList);
+        result.dispatchUpdatesTo(this);
     }
 }

@@ -19,15 +19,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class BaseViewHolder extends RecyclerView.ViewHolder {
 
-    private BaseQuickAdapter<?, ?> adapter;
     private final SparseArray<View> views = new SparseArray<>();
 
     public BaseViewHolder(@NonNull View itemView) {
         super(itemView);
-    }
-
-    public void setAdapter(BaseQuickAdapter<?, ?> adapter) {
-        this.adapter = adapter;
     }
 
     /**

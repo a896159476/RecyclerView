@@ -19,4 +19,5 @@ public class MultiMainAdapter extends BaseMultiItemAdapter<MultiMainBean, BaseVi
     protected void convert(@NonNull BaseViewHolder holder, MultiMainBean item, int position) {
         holder.setText(R.id.tv_name, item.getName());
     }
+
 }

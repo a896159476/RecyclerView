@@ -1,9 +1,6 @@
-package com.example.recyclerview.recycler.load
+package com.example.recyclerview.load
 
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.recyclerview.recycler.BaseQuickAdapter
-import com.example.recyclerview.recycler.BaseViewHolder
 
 
 /**
