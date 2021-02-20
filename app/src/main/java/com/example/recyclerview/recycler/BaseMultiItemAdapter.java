@@ -13,7 +13,7 @@ public abstract class BaseMultiItemAdapter<T extends BaseMultiItemEntity, VH ext
     }
 
     @Override
-    public int getItemViewType(int position) {
+    protected int getDefItemViewType(int position) {
         return data.get(position).getItemType();
     }
 

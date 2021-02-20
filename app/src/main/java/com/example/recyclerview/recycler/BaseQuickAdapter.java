@@ -5,13 +5,17 @@ import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.IntRange;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -70,7 +74,15 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
         context = viewGroup.getContext();
-
+        //尾布局
+        if (viewType == FOOTER_VIEW) {
+            if (mFooterLayout == null) {
+                mFooterLayout = new LinearLayout(context);
+                mFooterLayout.setOrientation(LinearLayout.VERTICAL);
+                mFooterLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
+            return createBaseViewHolder(mFooterLayout);
+        }
         //获取布局View
         View view;
         LayoutInflater mLayoutInflater = LayoutInflater.from(context);
@@ -85,6 +97,9 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
 
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
+        if (holder.getItemViewType() == FOOTER_VIEW) {
+            return;
+        }
         T item = null;
         if (position >= 0 && position < data.size()) {
             item = data.get(position);
@@ -96,6 +111,9 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
 
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
+        if (holder.getItemViewType() == FOOTER_VIEW) {
+            return;
+        }
         if (payloads.isEmpty()) {
             onBindViewHolder(holder, position);
             return;
@@ -111,6 +129,9 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
 
     @Override
     public int getItemCount() {
+        if (isOpenLoadMore) {
+            return data.size() + 1;
+        }
         return data.size();
     }
 
@@ -510,5 +531,177 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         data.clear();
         data.addAll(newList);
         result.dispatchUpdatesTo(this);
+    }
+
+    /****加载更多*****/
+    //是否开启加载更多
+    private boolean isOpenLoadMore = false;
+    public static final int FOOTER_VIEW = 0x10000333;
+    private LinearLayout mFooterLayout;
+    private boolean isLoading = false;
+    private View loadingView;
+    private View LoadFailedView;
+    private View LoadEndView;
+
+    private OnLoadMoreListener onLoadMoreListener;
+
+    public interface OnLoadMoreListener {
+        void onLoadMoreListener();
+
+        void onLoadFailedListener();
+    }
+
+    public void setOnLoadMoreListener(RecyclerView recyclerView, OnLoadMoreListener onLoadMoreListener) {
+        this.onLoadMoreListener = onLoadMoreListener;
+        isOpenLoadMore = true;
+        startLoadMore(recyclerView);
+    }
+
+    private void startLoadMore(RecyclerView recyclerView) {
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (dy > 0 && !isLoading) {
+                    // 大于0表示正在向上滑动，小于等于0表示停止或向下滑动
+                    RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
+                    int lastItemPosition = findLastVisibleItemPosition(manager);
+                    int itemCount = manager.getItemCount();
+                    // 判断是否滑动到了最后一个item，并且是向上滑动
+                    if (lastItemPosition >= (itemCount - 2)) {
+                        //加载更多
+                        onLoadMoreListener.onLoadMoreListener();
+                    }
+                }
+            }
+        });
+    }
+
+    //加载中
+    public void setLoadingView(int loadingId) {
+        isLoading = true;
+        if (loadingView == null) {
+            loadingView = LayoutInflater.from(context).inflate(loadingId, null);
+        }
+        mFooterLayout.removeAllViews();
+        mFooterLayout.addView(loadingView);
+    }
+
+    //加载成功
+    public void setLoadSuccessView() {
+        isLoading = false;
+        mFooterLayout.removeAllViews();
+    }
+
+    //加载失败
+    public void setLoadFailedView(int loadingId) {
+        if (LoadFailedView == null) {
+            LoadFailedView = LayoutInflater.from(context).inflate(loadingId, null);
+            LoadFailedView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (loadingView != null) {
+                        mFooterLayout.removeAllViews();
+                        mFooterLayout.addView(loadingView);
+                        onLoadMoreListener.onLoadFailedListener();
+                    }
+                }
+            });
+        }
+        mFooterLayout.removeAllViews();
+        mFooterLayout.addView(LoadFailedView);
+    }
+
+    //没有更多
+    public void setLoadEndView(int loadingId) {
+        if (LoadEndView == null) {
+            LoadEndView = LayoutInflater.from(context).inflate(loadingId, null);
+        }
+        mFooterLayout.removeAllViews();
+        mFooterLayout.addView(LoadEndView);
+    }
+
+    private int findLastVisibleItemPosition(RecyclerView.LayoutManager layoutManager) {
+        int lastVisibleItemPosition;
+        if (layoutManager instanceof GridLayoutManager) {
+            lastVisibleItemPosition = ((GridLayoutManager) layoutManager).findLastVisibleItemPosition();
+        } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+            int[] into = new int[((StaggeredGridLayoutManager) layoutManager).getSpanCount()];
+            ((StaggeredGridLayoutManager) layoutManager).findLastVisibleItemPositions(into);
+            lastVisibleItemPosition = last(into);
+        } else {
+            lastVisibleItemPosition = ((LinearLayoutManager) layoutManager).findLastVisibleItemPosition();
+        }
+        return lastVisibleItemPosition;
+    }
+
+    //取到最后的一个节点
+    private int last(int[] lastPositions) {
+        int last = lastPositions[0];
+        for (int value : lastPositions) {
+            if (value > last) {
+                last = value;
+            }
+        }
+        return last;
+    }
+
+    /**
+     * 针对StaggeredGridLayoutManager、GridLayoutManager模式分别重写onViewAttachedToWindow()、onAttachedToRecyclerView()方法，
+     * 否则会出现Footer View不能在列表底部占据一行的问题
+     */
+    @Override
+    public void onViewAttachedToWindow(@NonNull VH holder) {
+        super.onViewAttachedToWindow(holder);
+        if (isFooterView(holder.getLayoutPosition())) {
+            ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
+
+            if (lp instanceof StaggeredGridLayoutManager.LayoutParams) {
+                StaggeredGridLayoutManager.LayoutParams p = (StaggeredGridLayoutManager.LayoutParams) lp;
+                p.setFullSpan(true);
+            }
+        }
+    }
+
+    /**
+     * 针对StaggeredGridLayoutManager、GridLayoutManager模式分别重写onViewAttachedToWindow()、onAttachedToRecyclerView()方法，
+     * 否则会出现Footer View不能在列表底部占据一行的问题
+     */
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        final RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager) {
+            final GridLayoutManager gridManager = ((GridLayoutManager) layoutManager);
+            gridManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    if (isFooterView(position)) {
+                        return gridManager.getSpanCount();
+                    }
+                    return 1;
+                }
+            });
+        }
+    }
+
+    private boolean isFooterView(int position) {
+        return isOpenLoadMore && position >= getItemCount() - 1;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if (isFooterView(position)) {
+            return FOOTER_VIEW;//加载更多
+        }
+        return getDefItemViewType(position);
+    }
+
+    /**
+     * Override this method and return your ViewType.
+     * 重写此方法，返回你的ViewType。
+     */
+    protected int getDefItemViewType(int position) {
+        return super.getItemViewType(position);
     }
 }
