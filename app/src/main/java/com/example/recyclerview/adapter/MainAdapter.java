@@ -8,6 +8,7 @@ import com.example.recyclerview.bean.MainBean;
 import com.example.recyclerview.mian.DiffCallBack;
 import com.example.recyclerview.recycler.BaseQuickAdapter;
 import com.example.recyclerview.recycler.BaseViewHolder;
+import com.example.recyclerview.recycler.slide.BaseSlideAdapter;
 
 import java.util.List;
 
@@ -19,7 +20,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class MainAdapter extends BaseQuickAdapter<MainBean, BaseViewHolder> {
+public class MainAdapter extends BaseSlideAdapter<MainBean, BaseViewHolder> {
 
     public MainAdapter(int layoutResId, List<MainBean> data) {
         super(layoutResId, data);

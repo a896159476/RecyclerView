@@ -1,4 +1,4 @@
-package com.example.recyclerview.recycler.provider;
+package com.example.recyclerview.recycler.provider.slide;
 
 import android.util.SparseArray;
 import android.view.View;
@@ -6,14 +6,18 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 
-import com.example.recyclerview.recycler.BaseQuickAdapter;
 import com.example.recyclerview.recycler.BaseViewHolder;
+import com.example.recyclerview.recycler.slide.BaseSlideAdapter;
 
 import java.util.List;
 
-public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> extends BaseQuickAdapter<T, VH> {
+public abstract class BaseProviderSlideAdapter<T, VH extends BaseViewHolder> extends BaseSlideAdapter<T, VH> {
 
-    private final SparseArray<BaseItemProvider<T, VH>> mItemProviders = new SparseArray<>();
+    public BaseProviderSlideAdapter(List<T> data) {
+        super(0, data);
+    }
+
+    private final SparseArray<BaseItemSlideProvider<T, VH>> mItemProviders = new SparseArray<>();
 
     /**
      * 返回 item 类型
@@ -23,20 +27,16 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
     /**
      * 必须通过此方法，添加 provider
      *
-     * @param provider BaseItemProvider
+     * @param provider BaseItemSlideProvider
      */
-    public void addItemProvider(BaseItemProvider<T, VH> provider) {
+    public void addItemProvider(BaseItemSlideProvider<T, VH> provider) {
         provider.setAdapter(this);
         mItemProviders.put(provider.itemViewType, provider);
     }
 
-    public BaseProviderMultiAdapter(List<T> data) {
-        super(0, data);
-    }
-
     @Override
     protected VH onCreateDefViewHolder(ViewGroup parent, int viewType) {
-        BaseItemProvider<T, VH> provider = getItemProvider(viewType);
+        BaseItemSlideProvider<T, VH> provider = getItemProvider(viewType);
         provider.context = parent.getContext();
         VH baseViewHolder = provider.onCreateViewHolder(parent, viewType);
         provider.onViewHolderCreated(baseViewHolder, viewType);
@@ -69,7 +69,7 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
                 public void onClick(View v) {
                     int position = viewHolder.getAdapterPosition();
                     int itemViewType = viewHolder.getItemViewType();
-                    BaseItemProvider<T, VH> provider = mItemProviders.get(itemViewType);
+                    BaseItemSlideProvider<T, VH> provider = mItemProviders.get(itemViewType);
                     provider.onClick(viewHolder, v, data.get(position), position);
                 }
             });
@@ -81,7 +81,7 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
                 public boolean onLongClick(View v) {
                     int position = viewHolder.getAdapterPosition();
                     int itemViewType = viewHolder.getItemViewType();
-                    BaseItemProvider<T, VH> provider = mItemProviders.get(itemViewType);
+                    BaseItemSlideProvider<T, VH> provider = mItemProviders.get(itemViewType);
                     return provider.onLongClick(viewHolder, v, data.get(position), position);
                 }
             });
@@ -91,7 +91,7 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
     protected void bindChildClick(final VH viewHolder) {
         if (getOnItemChildClickListener() == null) {
             int itemViewType = viewHolder.getItemViewType();
-            final BaseItemProvider<T, VH> provider = mItemProviders.get(itemViewType);
+            final BaseItemSlideProvider<T, VH> provider = mItemProviders.get(itemViewType);
             if (provider == null) {
                 return;
             }
@@ -112,7 +112,7 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
         }
         if (getOnItemChildLongClickListener() == null) {
             int itemViewType = viewHolder.getItemViewType();
-            final BaseItemProvider<T, VH> provider = mItemProviders.get(itemViewType);
+            final BaseItemSlideProvider<T, VH> provider = mItemProviders.get(itemViewType);
             if (provider == null) {
                 return;
             }
@@ -134,14 +134,14 @@ public abstract class BaseProviderMultiAdapter<T, VH extends BaseViewHolder> ext
     }
 
     /**
-     * 通过 ViewType 获取 BaseItemProvider
+     * 通过 ViewType 获取 BaseItemSlideProvider
      * 例如：如果ViewType经过特殊处理，可以重写此方法，获取正确的Provider
      * （比如 ViewType 通过位运算进行的组合的）
      *
      * @param viewType Int
-     * @return BaseItemProvider
+     * @return BaseItemSlideProvider
      */
-    protected BaseItemProvider<T, VH> getItemProvider(int viewType) {
+    protected BaseItemSlideProvider<T, VH> getItemProvider(int viewType) {
         return mItemProviders.get(viewType);
     }
 

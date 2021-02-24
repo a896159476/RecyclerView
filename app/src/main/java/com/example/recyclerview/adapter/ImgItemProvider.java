@@ -7,8 +7,9 @@ import com.example.recyclerview.R;
 import com.example.recyclerview.bean.MultiMainBean;
 import com.example.recyclerview.recycler.provider.BaseItemProvider;
 import com.example.recyclerview.recycler.BaseViewHolder;
+import com.example.recyclerview.recycler.provider.slide.BaseItemSlideProvider;
 
-public class ImgItemProvider extends BaseItemProvider<MultiMainBean> {
+public class ImgItemProvider extends BaseItemSlideProvider<MultiMainBean,BaseViewHolder> {
     @Override
     public int getItemViewType() {
         return R.layout.item_main;

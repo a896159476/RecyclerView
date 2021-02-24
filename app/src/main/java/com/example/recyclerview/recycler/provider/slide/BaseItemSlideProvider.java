@@ -1,4 +1,4 @@
-package com.example.recyclerview.recycler.provider;
+package com.example.recyclerview.recycler.provider.slide;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -14,21 +14,17 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * [BaseProviderMultiAdapter] 的Provider基类
- */
-public abstract class BaseItemProvider<T, VH extends BaseViewHolder> {
-
+public abstract class BaseItemSlideProvider<T, VH extends BaseViewHolder> {
     public Context context;
-    private WeakReference<BaseProviderMultiAdapter<T, VH>> weakAdapter;
+    private WeakReference<BaseProviderSlideAdapter<T, VH>> weakAdapter;
     private final List<Integer> clickViewIds = new ArrayList<>();
     private final List<Integer> longClickViewIds = new ArrayList<>();
 
-    protected void setAdapter(BaseProviderMultiAdapter<T, VH> adapter) {
+    protected void setAdapter(BaseProviderSlideAdapter<T, VH> adapter) {
         weakAdapter = new WeakReference<>(adapter);
     }
 
-    public BaseProviderMultiAdapter<T, VH> getAdapter() {
+    public BaseProviderSlideAdapter<T, VH> getAdapter() {
         return weakAdapter.get();
     }
 
@@ -148,3 +144,4 @@ public abstract class BaseItemProvider<T, VH extends BaseViewHolder> {
         return longClickViewIds;
     }
 }
+
