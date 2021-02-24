@@ -3,6 +3,7 @@ package com.example.recyclerview.mian;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -14,6 +15,7 @@ import android.widget.Toast;
 
 import com.example.recyclerview.R;
 import com.example.recyclerview.adapter.MainAdapter;
+import com.example.recyclerview.adapter.MainProviderMultiAdapter;
 import com.example.recyclerview.adapter.MultiMainAdapter;
 import com.example.recyclerview.bean.MainBean;
 import com.example.recyclerview.bean.MultiMainBean;
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         mainBeanList.add(new MainBean(2, "300"));
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
         mainAdapter = new MainAdapter(R.layout.item_main, mainBeanList);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setLayoutManager(new GridLayoutManager(this,3));
         recyclerView.setAdapter(mainAdapter);
 
         mainAdapter.setOnLoadMoreListener(recyclerView, new BaseQuickAdapter.OnLoadMoreListener() {
@@ -98,39 +100,44 @@ public class MainActivity extends AppCompatActivity {
         multiMainList.add(new MultiMainBean(R.layout.item_main2, 4, "子1"));
         multiMainList.add(new MultiMainBean(R.layout.item_main2, 5, "子2"));
         RecyclerView multiRecyclerView = findViewById(R.id.multiRecyclerView);
-        final MultiMainAdapter multiMainAdapter = new MultiMainAdapter(multiMainList);
+
+        MainProviderMultiAdapter mainProviderMultiAdapter = new MainProviderMultiAdapter(multiMainList);
         multiRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        multiRecyclerView.setAdapter(multiMainAdapter);
-        //必须
-        multiMainAdapter.setLayouts(R.layout.item_main);
-        multiMainAdapter.setLayouts(R.layout.item_main2);
+        multiRecyclerView.setAdapter(mainProviderMultiAdapter);
 
-        multiMainAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(View view, int position) {
-                MultiMainBean multiMainBean = new MultiMainBean(R.layout.item_main, 5, "父2");
-                multiMainAdapter.addNewItem(multiMainBean);
-            }
-        });
-
-        multiMainAdapter.setOnLoadMoreListener(multiRecyclerView, new BaseQuickAdapter.OnLoadMoreListener() {
-            @Override
-            public void onLoadMoreListener() {
-                //加载中
-                multiMainAdapter.setLoadingView(R.layout.loading_view);
-                //模拟加载失败
-                multiMainAdapter.setLoadFailedView(R.layout.load_failed_view);
-            }
-
-            @Override
-            public void onLoadFailedListener() {
-                //模拟加载成功
-                MultiMainBean multiMainBean = new MultiMainBean(R.layout.item_main, 4, "父3");
-                multiMainAdapter.addNewItem(multiMainBean);
-                multiMainAdapter.setLoadSuccessView();
-                //模拟没有更多
-//              mainAdapter.setLoadEndView(R.layout.load_end_view);
-            }
-        });
+//        final MultiMainAdapter multiMainAdapter = new MultiMainAdapter(multiMainList);
+//        multiRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+//        multiRecyclerView.setAdapter(multiMainAdapter);
+//        //必须
+//        multiMainAdapter.setLayouts(R.layout.item_main);
+//        multiMainAdapter.setLayouts(R.layout.item_main2);
+//
+//        multiMainAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(View view, int position) {
+//                MultiMainBean multiMainBean = new MultiMainBean(R.layout.item_main, 5, "父2");
+//                multiMainAdapter.addNewItem(multiMainBean);
+//            }
+//        });
+//
+//        multiMainAdapter.setOnLoadMoreListener(multiRecyclerView, new BaseQuickAdapter.OnLoadMoreListener() {
+//            @Override
+//            public void onLoadMoreListener() {
+//                //加载中
+//                multiMainAdapter.setLoadingView(R.layout.loading_view);
+//                //模拟加载失败
+//                multiMainAdapter.setLoadFailedView(R.layout.load_failed_view);
+//            }
+//
+//            @Override
+//            public void onLoadFailedListener() {
+//                //模拟加载成功
+//                MultiMainBean multiMainBean = new MultiMainBean(R.layout.item_main, 4, "父3");
+//                multiMainAdapter.addNewItem(multiMainBean);
+//                multiMainAdapter.setLoadSuccessView();
+//                //模拟没有更多
+////              mainAdapter.setLoadEndView(R.layout.load_end_view);
+//            }
+//        });
     }
 }

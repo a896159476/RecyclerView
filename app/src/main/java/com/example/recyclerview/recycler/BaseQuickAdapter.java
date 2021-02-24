@@ -83,15 +83,23 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
             }
             return createBaseViewHolder(mFooterLayout);
         }
+
+        return onCreateDefViewHolder(viewGroup, viewType);
+    }
+
+    /**
+     * Override this method and return your ViewHolder.
+     * 重写此方法，返回你的ViewHolder。
+     */
+    protected VH onCreateDefViewHolder(ViewGroup parent, int viewType) {
         //获取布局View
         View view;
         LayoutInflater mLayoutInflater = LayoutInflater.from(context);
         if (isMultiItem) {
-            view = mLayoutInflater.inflate(getLayoutId(viewType), viewGroup, false);
+            view = mLayoutInflater.inflate(getLayoutId(viewType), parent, false);
         } else {
-            view = mLayoutInflater.inflate(layoutResId, viewGroup, false);
+            view = mLayoutInflater.inflate(layoutResId, parent, false);
         }
-        //获取ViewHolder
         return createBaseViewHolder(view);
     }
 
@@ -104,9 +112,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         if (position >= 0 && position < data.size()) {
             item = data.get(position);
         }
+
+        convert(holder, item, position);
         //设置item的点击事件/长按事件
         bindViewClickListener(holder, position);
-        convert(holder, item, position);
     }
 
     @Override
@@ -122,9 +131,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         if (position >= 0 && position < data.size()) {
             item = data.get(position);
         }
+
+        update(holder, item, payloads);
         //设置item的点击事件/长按事件
         bindViewClickListener(holder, position);
-        update(holder, item, payloads);
     }
 
     @Override
@@ -217,7 +227,7 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
     /**
      * item的点击事件/长按事件
      */
-    private void bindViewClickListener(final VH baseViewHolder, final int position) {
+    protected void bindViewClickListener(final VH baseViewHolder, final int position) {
         if (baseViewHolder == null) {
             return;
         }
@@ -282,6 +292,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         this.onItemClickListener = onItemClickListener;
     }
 
+    public OnItemClickListener getOnItemClickListener(){
+        return onItemClickListener;
+    }
+
     /**
      * item 长按事件
      */
@@ -293,6 +307,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
 
     public void setOnItemLongClickListener(OnItemLongClickListener onItemLongClickListener) {
         this.onItemLongClickListener = onItemLongClickListener;
+    }
+
+    public OnItemLongClickListener getOnItemLongClickListener(){
+        return onItemLongClickListener;
     }
 
     /**
@@ -323,6 +341,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
         mOnItemChildClickListener = listener;
     }
 
+    public OnItemChildClickListener getOnItemChildClickListener(){
+        return mOnItemChildClickListener;
+    }
+
     /**
      * 用于保存需要设置长按点击事件的 item
      */
@@ -349,6 +371,10 @@ public abstract class BaseQuickAdapter<T, VH extends BaseViewHolder> extends Rec
 
     public void setOnItemChildLongClickListener(OnItemChildLongClickListener listener) {
         onItemChildLongClickListener = listener;
+    }
+
+    public OnItemChildLongClickListener getOnItemChildLongClickListener(){
+        return onItemChildLongClickListener;
     }
 
     public Context getContext() {
